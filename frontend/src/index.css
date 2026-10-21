@@ -1,0 +1,110 @@
+:root {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+  color: #15372b;
+  background-color: #f2faf6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --green-950: #0a2f23;
+  --green-900: #0d3b2c;
+  --green-800: #0e533c;
+  --green-700: #116a4b;
+  --green-600: #16845c;
+  --green-500: #24a372;
+  --green-400: #55c493;
+  --green-300: #8ddfba;
+  --green-200: #c7f2dd;
+  --green-100: #e3f9ee;
+  --green-50: #f3fbf7;
+
+  --white: #ffffff;
+  --ink: #15372b;
+  --ink-soft: #35584a;
+  --muted: #667e73;
+  --muted-light: #8ba196;
+  --line: #dfefe6;
+  --line-strong: #cfe5d9;
+  --danger: #b43d3d;
+  --danger-soft: #fff2f2;
+  --danger-line: #f3d2d2;
+
+  --radius-xl: 30px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --shadow-shell: 0 40px 100px -36px rgba(12, 73, 50, 0.32),
+    0 4px 20px rgba(12, 73, 50, 0.05);
+  --transition: 180ms ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background-color: #f2faf6;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100svh;
+}
+
+body,
+button,
+input {
+  font-family: inherit;
+}
+
+button,
+input {
+  font-size: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+p,
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+::selection {
+  color: var(--white);
+  background: var(--green-600);
+}
