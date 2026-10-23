@@ -1,36 +1,46 @@
 import { Avatar } from '../Avatar'
+import { useNavigate } from 'react-router-dom'
 import { CRM_STAGES, HOT_LEADS } from './campaignData'
-import { ArrowUpRightIcon, PhoneOutlineIcon, TrendUpIcon } from './DashboardIcons'
+import type { PriorityLead } from './campaignData'
+import { ArrowUpRightIcon, PipelineIcon, TrendUpIcon, WhatsAppIcon } from './DashboardIcons'
+import { SparkIcon } from '../icons'
 
 type CrmPipelineCardProps = {
   onNotice: (message: string) => void
+  onDialLead?: (lead: PriorityLead) => void
 }
 
-export function CrmPipelineCard({ onNotice }: CrmPipelineCardProps) {
+export function CrmPipelineCard({ onNotice, onDialLead }: CrmPipelineCardProps) {
+  const navigate = useNavigate()
+
   return (
     <article className="dashboard-panel crm-panel">
       <div className="panel-heading">
         <div>
-          <h2>CRM pipeline</h2>
-          <p>Your leads, at a glance</p>
+          <div className="analytics-kicker">
+            <PipelineIcon />
+            <span>Revenue Operations</span>
+          </div>
+          <h2>Autonomous CRM Pipeline</h2>
+          <p>Real-time deal flow &amp; AI qualification stages</p>
         </div>
         <button
           type="button"
           className="panel-link"
-          onClick={() => onNotice('The full CRM pipeline is coming in the next build.')}
+          onClick={() => navigate('/crm')}
         >
-          Open CRM
+          <span>Open CRM</span>
           <ArrowUpRightIcon />
         </button>
       </div>
 
       <div className="pipeline-total">
-        <span>Open pipeline</span>
+        <span>Active Pipeline Value</span>
         <div>
           <strong>$184,200</strong>
           <small>
             <TrendUpIcon />
-            14.2%
+            +14.2% this cycle
           </small>
         </div>
       </div>
@@ -44,7 +54,7 @@ export function CrmPipelineCard({ onNotice }: CrmPipelineCardProps) {
                 {stage.label}
               </span>
               <span>
-                <strong>{stage.count.toLocaleString('en-US')}</strong>
+                <strong>{stage.count.toLocaleString('en-US')} leads</strong>
                 <small>{stage.value}</small>
               </span>
             </div>
@@ -60,33 +70,42 @@ export function CrmPipelineCard({ onNotice }: CrmPipelineCardProps) {
 
       <div className="hot-leads">
         <div className="hot-leads__head">
-          <span>Hot leads today</span>
+          <span>High-Intent Leads Queue</span>
           <button
             type="button"
             className="text-button"
-            onClick={() => onNotice('The lead inbox is coming in the next build.')}
+            onClick={() => onNotice('Lead inbox opened.')}
           >
             View all
           </button>
         </div>
 
-        {HOT_LEADS.map((lead) => (
+        {HOT_LEADS.slice(0, 3).map((lead) => (
           <div className="hot-lead" key={lead.id}>
             <Avatar name={lead.name} />
             <span className="hot-lead__copy">
               <strong>{lead.name}</strong>
               <small>
-                {lead.company} · {lead.note}
+                {lead.company} · {lead.dealValue}
               </small>
             </span>
-            <span className="hot-lead__score">{lead.score}</span>
+            <span className="hot-lead__score">
+              <SparkIcon />
+              {lead.score}
+            </span>
             <button
               type="button"
-              className="hot-lead__call"
-              aria-label={`Call ${lead.name}`}
-              onClick={() => onNotice(`Call queue for ${lead.name} is coming next.`)}
+              className="hot-lead__call text-emerald-500 hover:text-emerald-400"
+              aria-label={`WhatsApp message ${lead.name}`}
+              onClick={() => {
+                if (onDialLead) {
+                  onDialLead(lead)
+                } else {
+                  onNotice(`Opening WhatsApp conversation with ${lead.name}…`)
+                }
+              }}
             >
-              <PhoneOutlineIcon />
+              <WhatsAppIcon className="w-4 h-4 text-emerald-500" />
             </button>
           </div>
         ))}

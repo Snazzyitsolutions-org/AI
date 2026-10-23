@@ -7,7 +7,7 @@ import { AuthLayout } from '../components/AuthLayout'
 import { FormBanner } from '../components/FormBanner'
 import { FormField } from '../components/FormField'
 import { GoogleButton } from '../components/GoogleButton'
-import { MailIcon, LockIcon } from '../components/icons'
+import { LockIcon, MailIcon, SparkIcon } from '../components/icons'
 import { PasswordToggle } from '../components/PasswordToggle'
 import { SubmitButton } from '../components/SubmitButton'
 import { getAuthErrorMessage } from '../lib/auth-errors'
@@ -87,10 +87,15 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <header className="auth-heading">
-        <span className="auth-kicker">Welcome back</span>
-        <h2>Sign in to CallWave</h2>
-        <p>Pick up right where you left off.</p>
+      <header className="mb-6">
+        <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-700">
+          <SparkIcon className="h-3 w-3" />
+          Welcome back
+        </p>
+        <h1 className="mt-2.5 text-[24px] font-extrabold tracking-tight text-[#10241b] sm:text-[28px]">
+          Sign in to CallWave
+        </h1>
+        <p className="mt-1.5 text-[13px] text-[#6d8378]">Pick up right where you left off.</p>
       </header>
 
       {banner && <FormBanner message={banner} onDismiss={() => setBanner(null)} />}
@@ -98,7 +103,7 @@ export function LoginPage() {
       <GoogleButton disabled={submitting} onClick={handleGoogleSignIn} />
       <AuthDivider label="or sign in with email" />
 
-      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+      <form className="space-y-3.5" onSubmit={handleSubmit} noValidate>
         <FormField
           id="email"
           label="Email address"
@@ -138,42 +143,64 @@ export function LoginPage() {
           }
         />
 
-        <div className="form-options">
-          <label className="checkbox">
+        <div className="pt-0.5">
+          <label className="group inline-flex cursor-pointer select-none items-center gap-2.5 text-[12px] font-medium text-[#5d7468]">
             <input
               type="checkbox"
+              className="peer sr-only"
               checked={remember}
               onChange={(event) => setRemember(event.target.checked)}
               disabled={submitting}
             />
-            <span className="checkbox__box" aria-hidden="true">
-              <svg viewBox="0 0 12 10" fill="none">
-                <path
-                  d="m1.5 5 2.7 2.7 6.3-6"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+            <span
+              className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] border transition-all duration-150 peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500/30 peer-focus-visible:ring-offset-1 ${
+                remember
+                  ? 'border-emerald-600 bg-emerald-600'
+                  : 'border-[#cfdfd5] bg-white group-hover:border-[#a9c3b6]'
+              }`}
+            >
+              {remember && (
+                <svg viewBox="0 0 12 10" fill="none" className="h-2.5 w-2.5 text-white">
+                  <path
+                    d="m1.5 5 2.7 2.7 6.3-6"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
             </span>
-            <span>Remember me for 30 days</span>
+            Remember me for 30 days
           </label>
         </div>
 
-        <SubmitButton loading={submitting} loadingLabel="Signing in…">
-          Sign in
-        </SubmitButton>
+        <div className="pt-1">
+          <SubmitButton loading={submitting} loadingLabel="Signing in…">
+            Sign in
+          </SubmitButton>
+        </div>
       </form>
 
-      <p className="auth-switch">
-        New to CallWave? <Link to="/register">Create an account</Link>
+      <p className="mt-5 text-center text-[12px] text-[#7a8f83]">
+        New to CallWave?{' '}
+        <Link
+          to="/register"
+          className="font-bold text-emerald-700 underline-offset-4 transition-colors hover:text-emerald-800 hover:underline"
+        >
+          Create an account
+        </Link>
       </p>
 
-      <p className="auth-footnote">
-        <LockIcon />
-        Your password is securely hashed and never shared.
-      </p>
+      <div className="mt-4 border-t border-dashed border-[#e1ebe4] pt-4 text-center">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 rounded-[8px] border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-[11px] font-bold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+        >
+          <SparkIcon className="h-3 w-3" />
+          Explore Workspace Directly
+        </Link>
+      </div>
     </AuthLayout>
   )
 }

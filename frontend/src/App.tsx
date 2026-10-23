@@ -1,24 +1,23 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { useAuth } from './auth/AuthContext'
-import { HomePage } from './pages/HomePage'
+import { DashboardPage } from './pages/DashboardPage'
+import { CampaignsPage } from './pages/CampaignsPage'
+import { ContactsPage } from './pages/ContactsPage'
+import { CrmPage } from './pages/CrmPage'
+import { InboxPage } from './pages/InboxPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
-import './App.css'
+import { TemplatesPage } from './pages/TemplatesPage'
+import { NotificationsPage } from './pages/NotificationsPage'
+import { AiStudioPage } from './pages/AiStudioPage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
+import { SendersPage } from './pages/SendersPage'
+import { AutomationsPage } from './pages/AutomationsPage'
+import { WhatsAppBulkingLoader } from './components/common/WhatsAppBulkingLoader'
 
 function BootScreen() {
-  return (
-    <div className="boot-screen" role="status" aria-label="Loading CallWave">
-      <div className="boot-brand">
-        <span className="boot-brand__icon">
-          <img src="/logo.png" alt="" width="38" height="38" />
-        </span>
-        <span>CallWave</span>
-      </div>
-      <span className="boot-spinner" aria-hidden="true" />
-      <p>Getting things ready…</p>
-    </div>
-  )
+  return <WhatsAppBulkingLoader variant="fullscreen" size="lg" />
 }
 
 function AppRoutes() {
@@ -30,6 +29,18 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/" element={<DashboardPage />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/inbox" element={<InboxPage />} />
+      <Route path="/campaigns" element={<CampaignsPage />} />
+      <Route path="/templates" element={<TemplatesPage />} />
+      <Route path="/contacts" element={<ContactsPage />} />
+      <Route path="/crm" element={<CrmPage />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
+      <Route path="/ai-studio" element={<AiStudioPage />} />
+      <Route path="/analytics" element={<AnalyticsPage />} />
+      <Route path="/numbers" element={<SendersPage />} />
+      <Route path="/automations" element={<AutomationsPage />} />
       <Route
         path="/login"
         element={user ? <Navigate to="/" replace /> : <LoginPage />}
@@ -38,11 +49,7 @@ function AppRoutes() {
         path="/register"
         element={user ? <Navigate to="/" replace /> : <RegisterPage />}
       />
-      <Route
-        path="/"
-        element={user ? <HomePage /> : <Navigate to="/login" replace />}
-      />
-      <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

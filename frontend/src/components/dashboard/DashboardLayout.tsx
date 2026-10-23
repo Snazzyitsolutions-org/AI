@@ -1,65 +1,72 @@
-import { useEffect, useRef, useState } from 'react'
-import type { ComponentType, ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { Avatar } from '../Avatar'
 import { BrandMark } from '../BrandMark'
-import { LogOutIcon, SparkIcon } from '../icons'
+import { LogOutIcon } from '../icons'
 import {
-  AnalyticsIcon,
-  ArrowUpRightIcon,
-  BellIcon,
   ChevronDownIcon,
-  ContactsIcon,
   HeadsetIcon,
-  HomeIcon,
-  MegaphoneIcon,
   MenuIcon,
-  PhoneOutlineIcon,
-  PipelineIcon,
   SearchIcon,
   SettingsIcon,
 } from './DashboardIcons'
+import { Sidebar } from './Sidebar'
+import { NotificationDropdown } from './NotificationDropdown'
+import { GlobalSearchModal } from './GlobalSearchModal'
 
 type DashboardLayoutProps = {
   children: ReactNode
   search: string
+  activeNav?: string
+  searchPlaceholder?: string
   onSearchChange: (value: string) => void
   onNotice: (message: string) => void
+  onNewCampaign: () => void
 }
 
-type NavItem = {
-  id: string
-  label: string
-  icon: ComponentType<{ className?: string }>
-  badge?: string
-}
-
-const PRIMARY_NAV: NavItem[] = [
-  { id: 'home', label: 'Home', icon: HomeIcon },
-  { id: 'campaigns', label: 'Campaigns', icon: MegaphoneIcon, badge: '18' },
-  { id: 'contacts', label: 'Contacts', icon: ContactsIcon },
-  { id: 'ai-studio', label: 'AI Studio', icon: SparkIcon },
-]
-
-const WORKSPACE_NAV: NavItem[] = [
-  { id: 'crm', label: 'CRM pipeline', icon: PipelineIcon, badge: '12' },
-  { id: 'analytics', label: 'Analytics', icon: AnalyticsIcon },
-  { id: 'calls', label: 'Call history', icon: PhoneOutlineIcon },
-  { id: 'numbers', label: 'Phone numbers', icon: HeadsetIcon },
-]
+const SIDEBAR_STORAGE_KEY = 'callwave.sidebar.collapsed'
 
 export function DashboardLayout({
   children,
   search,
+  activeNav,
+  searchPlaceholder = 'Search campaigns, templates, numbers…',
   onSearchChange,
   onNotice,
+  onNewCampaign,
 }: DashboardLayoutProps) {
   const { user, logout } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+
+  const closeSidebar = useCallback(() => setSidebarOpen(false), [])
+  const toggleSidebarCollapsed = useCallback(
+    () => setSidebarCollapsed((current) => !current),
+    [],
+  )
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, sidebarCollapsed ? '1' : '0')
+    } catch {
+      // Storage fallback
+    }
+  }, [sidebarCollapsed])
 
   useEffect(() => {
     if (!userMenuOpen) return
@@ -91,13 +98,17 @@ export function DashboardLayout({
         target instanceof HTMLTextAreaElement ||
         target.isContentEditable
 
-      if (event.key === '/' && !isTyping) {
+      if (
+        ((event.key === 'k' || event.key === 'K') && (event.metaKey || event.ctrlKey)) ||
+        (event.key === '/' && !isTyping)
+      ) {
         event.preventDefault()
-        searchRef.current?.focus()
+        setGlobalSearchOpen(true)
       }
 
       if (event.key === 'Escape') {
         setSidebarOpen(false)
+        setGlobalSearchOpen(false)
       }
     }
 
@@ -116,11 +127,34 @@ export function DashboardLayout({
     }
   }, [sidebarOpen])
 
-  function handleNavigation(item: NavItem) {
-    setSidebarOpen(false)
+  const path = location.pathname.replace(/^\//, '')
+  const currentNav = activeNav || path || 'dashboard'
 
-    if (item.id !== 'home') {
-      onNotice(`${item.label} is coming in the next build.`)
+  function handleNavigation(navId: string, label: string) {
+    if (navId === 'dashboard' || navId === 'home') {
+      navigate('/dashboard')
+    } else if (navId === 'inbox') {
+      navigate('/inbox')
+    } else if (navId === 'campaigns') {
+      navigate('/campaigns')
+    } else if (navId === 'templates') {
+      navigate('/templates')
+    } else if (navId === 'contacts') {
+      navigate('/contacts')
+    } else if (navId === 'crm') {
+      navigate('/crm')
+    } else if (navId === 'notifications') {
+      navigate('/notifications')
+    } else if (navId === 'ai-studio') {
+      navigate('/ai-studio')
+    } else if (navId === 'analytics') {
+      navigate('/analytics')
+    } else if (navId === 'numbers') {
+      navigate('/numbers')
+    } else if (navId === 'automations') {
+      navigate('/automations')
+    } else {
+      onNotice(`${label} is coming in the next build.`)
     }
   }
 
@@ -136,209 +170,189 @@ export function DashboardLayout({
     }
   }
 
-  const firstName = user?.name.split(/\s+/)[0] || 'there'
   const avatarName = user?.name || 'CallWave user'
 
   return (
-    <div className={`dashboard-shell${sidebarOpen ? ' sidebar-open' : ''}`}>
-      <aside className="dashboard-sidebar" aria-label="Workspace navigation">
-        <div className="sidebar-brand">
-          <BrandMark />
-          <p className="sidebar-brand__tagline">AI calling &amp; CRM</p>
-        </div>
+    <div className="min-h-screen bg-[#fbfdfc] flex flex-row text-slate-900 selection:bg-emerald-500 selection:text-white">
+      {/* 1. Sidebar - Fixed to viewport on desktop, drawer on mobile */}
+      <Sidebar
+        user={user}
+        open={sidebarOpen}
+        collapsed={sidebarCollapsed}
+        signingOut={signingOut}
+        activeNav={currentNav}
+        onClose={closeSidebar}
+        onToggleCollapse={toggleSidebarCollapsed}
+        onNavigate={handleNavigation}
+        onNewCampaign={onNewCampaign}
+        onSignOut={handleSignOut}
+        onNotice={onNotice}
+      />
 
-        <nav className="sidebar-nav">
-          <p className="sidebar-section-label">Workspace</p>
-          {PRIMARY_NAV.map((item) => {
-            const Icon = item.icon
-            const isActive = item.id === 'home'
-
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={`sidebar-link${isActive ? ' is-active' : ''}`}
-                onClick={() => handleNavigation(item)}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                <Icon className="sidebar-link__icon" />
-                <span className="sidebar-link__label">{item.label}</span>
-                {item.badge && <span className="sidebar-link__badge">{item.badge}</span>}
-              </button>
-            )
-          })}
-
-          <p className="sidebar-section-label sidebar-section-label--spaced">Manage</p>
-          {WORKSPACE_NAV.map((item) => {
-            const Icon = item.icon
-
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className="sidebar-link"
-                onClick={() => handleNavigation(item)}
-              >
-                <Icon className="sidebar-link__icon" />
-                <span className="sidebar-link__label">{item.label}</span>
-                {item.badge && <span className="sidebar-link__badge">{item.badge}</span>}
-              </button>
-            )
-          })}
-        </nav>
-
-        <div className="sidebar-bottom">
-          <div className="sidebar-usage">
-            <div className="sidebar-usage__head">
-              <span>
-                <SparkIcon />
-                AI credits
-              </span>
-              <strong>68%</strong>
-            </div>
-            <p>3,400 of 5,000 used</p>
-            <div className="sidebar-usage__bar" aria-hidden="true">
-              <span />
-            </div>
-            <button
-              type="button"
-              className="sidebar-upgrade"
-              onClick={() => onNotice('Plan upgrades will be available soon.')}
-            >
-              Upgrade plan
-              <ArrowUpRightIcon />
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className="sidebar-account"
-            onClick={() => {
-              setSidebarOpen(false)
-              setUserMenuOpen(true)
-            }}
-          >
-            <Avatar name={avatarName} src={user?.avatarUrl} />
-            <span className="sidebar-account__copy">
-              <strong>{firstName}</strong>
-              <small>Pro workspace</small>
-            </span>
-            <SettingsIcon className="sidebar-account__settings" />
-          </button>
-        </div>
-      </aside>
-
+      {/* 2. Mobile Drawer Backdrop */}
       {sidebarOpen && (
         <button
           type="button"
-          className="sidebar-backdrop"
+          tabIndex={-1}
           aria-label="Close navigation"
-          onClick={() => setSidebarOpen(false)}
+          onClick={closeSidebar}
+          className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-40 lg:hidden cursor-default border-none outline-none animate-in fade-in duration-200"
         />
       )}
 
-      <div className="dashboard-content">
-        <header className="dashboard-topbar">
+      {/* 3. Main Workspace Container - Offset by sidebar width on desktop */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 min-h-screen transition-all duration-300 ${
+          sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+        } ${
+          currentNav === 'inbox' ? 'h-[100svh] max-h-[100svh] overflow-hidden' : ''
+        }`}
+      >
+        {/* Apple/Stripe-level Glassmorphic Topbar Header */}
+        <header className="sticky top-0 z-20 h-16 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-4 sm:px-6 flex items-center justify-between gap-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+          {/* Mobile hamburger menu button */}
           <button
             type="button"
-            className="topbar-icon-button topbar-menu"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open navigation"
+            aria-expanded={sidebarOpen}
+            aria-controls="workspace-sidebar"
+            className="flex lg:hidden items-center justify-center w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
           >
-            <MenuIcon />
+            <MenuIcon className="w-5 h-5" />
           </button>
 
-          <div className="topbar-mobile-brand">
-            <BrandMark />
+          {/* Mobile BrandMark */}
+          <div className="flex lg:hidden items-center">
+            <BrandMark compact />
           </div>
 
-          <label className="topbar-search">
-            <SearchIcon className="topbar-search__icon" />
+          {/* Mobile Search Button */}
+          <button
+            type="button"
+            onClick={() => setGlobalSearchOpen(true)}
+            aria-label="Open global search"
+            className="flex sm:hidden items-center justify-center w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors ml-auto mr-1"
+          >
+            <SearchIcon className="w-4 h-4" />
+          </button>
+
+          {/* Floating Global Search Bar (Wider, Taller, Full Working Command Palette) */}
+          <div
+            onClick={() => setGlobalSearchOpen(true)}
+            className="relative flex-1 max-w-xl lg:max-w-2xl hidden sm:flex items-center cursor-pointer group"
+          >
+            <SearchIcon className="absolute left-3.5 w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors pointer-events-none" />
             <input
               ref={searchRef}
-              type="search"
+              type="text"
+              readOnly
               value={search}
-              onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search campaigns…"
-              aria-label="Search campaigns"
+              onChange={(e) => onSearchChange(e.target.value)}
+              onClick={() => setGlobalSearchOpen(true)}
+              onFocus={() => setGlobalSearchOpen(true)}
+              placeholder={searchPlaceholder || 'Search campaigns, templates, contacts, numbers...'}
+              aria-label={searchPlaceholder || 'Global search command palette'}
+              className="w-full h-10 sm:h-11 pl-10 pr-20 text-xs sm:text-sm bg-slate-100/75 hover:bg-slate-100/95 focus:bg-white rounded-xl border border-slate-200/70 hover:border-slate-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-slate-900 placeholder:text-slate-400 outline-none transition-all shadow-2xs cursor-pointer"
             />
-            <kbd>/</kbd>
-          </label>
+            <div className="absolute right-3 flex items-center gap-1 pointer-events-none">
+              <kbd className="px-1.5 py-0.5 rounded-md bg-white border border-slate-200/90 text-[10px] font-mono font-medium text-slate-400 shadow-2xs">
+                ⌘K
+              </kbd>
+              <kbd className="px-1.5 py-0.5 rounded-md bg-white border border-slate-200/90 text-[10px] font-mono font-medium text-slate-400 shadow-2xs">
+                /
+              </kbd>
+            </div>
+          </div>
 
-          <div className="topbar-actions">
-            <span className="topbar-live">
-              <span />
-              Live
+          {/* Right Action Icons & Profile */}
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+            {/* Live WhatsApp Telemetry Pill */}
+            <span className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50/80 border border-emerald-200/60 text-emerald-800 text-xs font-semibold shadow-2xs">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span>32 Senders Live</span>
             </span>
 
-            <button
-              type="button"
-              className="topbar-icon-button topbar-bell"
-              aria-label="Notifications"
-              onClick={() => onNotice('You are all caught up — no new notifications.')}
-            >
-              <BellIcon />
-              <span className="topbar-bell__dot" />
-            </button>
+            {/* Notifications Center Dropdown */}
+            <NotificationDropdown onNotice={onNotice} />
 
-            <div className="topbar-account" ref={menuRef}>
+            {/* User Profile Pill */}
+            <div className="relative" ref={menuRef}>
               <button
                 type="button"
-                className="topbar-user"
                 onClick={() => setUserMenuOpen((open) => !open)}
                 aria-expanded={userMenuOpen}
                 aria-haspopup="menu"
+                className="flex items-center gap-2.5 p-1 sm:pl-1.5 sm:pr-3 py-1 rounded-full hover:bg-slate-100/80 transition-colors border border-transparent hover:border-slate-200/60"
               >
-                <Avatar name={avatarName} src={user?.avatarUrl} />
-                <span className="topbar-user__copy">
-                  <strong>{user?.name || 'CallWave user'}</strong>
-                  <small>Workspace owner</small>
+                <Avatar name={avatarName} src={user?.avatarUrl} size="small" />
+                <span className="hidden md:block text-left text-xs">
+                  <strong className="block font-bold text-slate-800 leading-tight">
+                    {user?.name || 'CallWave user'}
+                  </strong>
+                  <span className="block text-[10px] text-slate-400 font-medium">
+                    Pro Workspace
+                  </span>
                 </span>
-                <ChevronDownIcon className="topbar-user__chevron" />
+                <ChevronDownIcon className="hidden sm:block w-3.5 h-3.5 text-slate-400" />
               </button>
 
               {userMenuOpen && (
-                <div className="account-menu" role="menu">
-                  <div className="account-menu__profile">
-                    <Avatar name={avatarName} src={user?.avatarUrl} />
-                    <span>
-                      <strong>{user?.name || 'CallWave user'}</strong>
-                      <small>{user?.email}</small>
-                    </span>
+                <div
+                  className="absolute right-0 mt-2 w-56 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/80 shadow-2xl p-2 z-50 text-xs animate-in fade-in zoom-in-95 duration-150"
+                  role="menu"
+                >
+                  <div className="flex items-center gap-2.5 p-2.5 border-b border-slate-100 mb-1">
+                    <Avatar name={avatarName} src={user?.avatarUrl} size="small" />
+                    <div className="overflow-hidden">
+                      <strong className="block font-bold text-slate-800 truncate">
+                        {user?.name || 'CallWave user'}
+                      </strong>
+                      <span className="block text-[11px] text-slate-500 truncate">
+                        {user?.email || 'admin@callwave.io'}
+                      </span>
+                    </div>
                   </div>
+
                   <button
                     type="button"
-                    className="account-menu__item"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 font-medium transition-colors"
                     role="menuitem"
                     onClick={() => {
                       setUserMenuOpen(false)
                       onNotice('Account settings are coming next.')
                     }}
                   >
-                    <SettingsIcon />
+                    <SettingsIcon className="w-4 h-4 text-slate-500" />
                     Account settings
                   </button>
+
                   <button
                     type="button"
-                    className="account-menu__item"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 font-medium transition-colors"
                     role="menuitem"
                     onClick={() => {
                       setUserMenuOpen(false)
                       onNotice('Help center is coming next.')
                     }}
                   >
-                    <HeadsetIcon />
+                    <HeadsetIcon className="w-4 h-4 text-slate-500" />
                     Help &amp; support
                   </button>
-                  <div className="account-menu__divider" />
+
+                  <div className="my-1 border-t border-slate-100" />
+
                   <button
                     type="button"
-                    className="account-menu__item account-menu__item--danger"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-medium transition-colors"
                     role="menuitem"
                     onClick={handleSignOut}
                     disabled={signingOut}
                   >
-                    <LogOutIcon />
+                    <LogOutIcon className="w-4 h-4 text-rose-500" />
                     {signingOut ? 'Signing out…' : 'Sign out'}
                   </button>
                 </div>
@@ -347,8 +361,25 @@ export function DashboardLayout({
           </div>
         </header>
 
-        <main className="dashboard-main">{children}</main>
+        {/* Page Content Body - Compact, tightly proportioned */}
+        <main
+          className={`flex-1 ${
+            currentNav === 'inbox'
+              ? 'p-0 m-0 w-full h-[calc(100svh-64px)] max-h-[calc(100svh-64px)] overflow-hidden flex flex-col'
+              : 'p-3 sm:p-4 lg:p-5 overflow-y-auto'
+          }`}
+        >
+          {children}
+        </main>
       </div>
+
+      {/* Global Command Palette Search Modal */}
+      <GlobalSearchModal
+        isOpen={globalSearchOpen}
+        onClose={() => setGlobalSearchOpen(false)}
+        onNewCampaign={onNewCampaign}
+        onNotice={onNotice}
+      />
     </div>
   )
 }

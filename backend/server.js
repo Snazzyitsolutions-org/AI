@@ -10,11 +10,16 @@ import { closeDb, initDb, pool } from './db.js'
 const app = express()
 
 app.disable('x-powered-by')
-app.use(helmet())
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 app.use(
   cors({
-    origin: config.frontendUrl,
-    credentials: true,
+    origin: [
+      config.frontendUrl || 'http://localhost:5173',
+      'https://app.swaggerhub.com',
+    ],
+    credentials: true, // callwave_session cookie set hone ke liye zaroori hai
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 )
 app.use(express.json({ limit: '16kb' }))

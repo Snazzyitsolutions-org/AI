@@ -7,7 +7,7 @@ import { AuthLayout } from '../components/AuthLayout'
 import { FormBanner } from '../components/FormBanner'
 import { FormField } from '../components/FormField'
 import { GoogleButton } from '../components/GoogleButton'
-import { LockIcon, MailIcon, UserIcon } from '../components/icons'
+import { LockIcon, MailIcon, SparkIcon, UserIcon } from '../components/icons'
 import { PasswordToggle } from '../components/PasswordToggle'
 import { StrengthMeter } from '../components/StrengthMeter'
 import { SubmitButton } from '../components/SubmitButton'
@@ -100,10 +100,17 @@ export function RegisterPage() {
 
   return (
     <AuthLayout>
-      <header className="auth-heading auth-heading--compact">
-        <span className="auth-kicker">Get started</span>
-        <h2>Create your account</h2>
-        <p>Your first great conversation is only a minute away.</p>
+      <header className="mb-5">
+        <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-700">
+          <SparkIcon className="h-3 w-3" />
+          Get started
+        </p>
+        <h1 className="mt-2.5 text-[24px] font-extrabold tracking-tight text-[#10241b] sm:text-[28px]">
+          Create your account
+        </h1>
+        <p className="mt-1.5 text-[13px] text-[#6d8378]">
+          Your first great conversation is only a minute away.
+        </p>
       </header>
 
       {banner && <FormBanner message={banner} onDismiss={() => setBanner(null)} />}
@@ -111,7 +118,7 @@ export function RegisterPage() {
       <GoogleButton disabled={submitting} onClick={handleGoogleSignIn} />
       <AuthDivider label="or sign up with email" />
 
-      <form className="auth-form auth-form--register" onSubmit={handleSubmit} noValidate>
+      <form className="space-y-3.5" onSubmit={handleSubmit} noValidate>
         <FormField
           id="name"
           label="Full name"
@@ -191,13 +198,21 @@ export function RegisterPage() {
           }
         />
 
-        <SubmitButton loading={submitting} loadingLabel="Creating account…">
-          Create my account
-        </SubmitButton>
+        <div className="pt-1">
+          <SubmitButton loading={submitting} loadingLabel="Creating account…">
+            Create my account
+          </SubmitButton>
+        </div>
       </form>
 
-      <p className="auth-switch">
-        Already have an account? <Link to="/login">Sign in</Link>
+      <p className="mt-5 text-center text-[12px] text-[#7a8f83]">
+        Already have an account?{' '}
+        <Link
+          to="/login"
+          className="font-bold text-emerald-700 underline-offset-4 transition-colors hover:text-emerald-800 hover:underline"
+        >
+          Sign in
+        </Link>
       </p>
     </AuthLayout>
   )
