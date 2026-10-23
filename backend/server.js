@@ -6,6 +6,7 @@ import helmet from 'helmet'
 import authRouter from './auth.js'
 import { config } from './config.js'
 import { closeDb, initDb, pool } from './db.js'
+import messageWriterRoutes, { aiRouter } from './features/message-writer/messageWriter.route.js'
 
 const app = express()
 
@@ -58,6 +59,8 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/auth/register', authLimiter)
 app.use('/api/auth/login', authLimiter)
 app.use('/api/auth', authRouter)
+app.use('/api/ai', aiRouter)
+app.use('/api', messageWriterRoutes)
 
 app.use('/api', (req, res) => {
   res.status(404).json({ message: 'API route not found.' })
@@ -70,6 +73,10 @@ app.use((error, req, res, next) => {
 
   if (error?.type === 'entity.parse.failed') {
     return res.status(400).json({ message: 'Request body must be valid JSON.' })
+  }
+
+  if (error?.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Request body must be no larger than 16 KB.' })
   }
 
   console.error(error)
@@ -104,7 +111,11 @@ try {
   console.error(`\nCould not connect to PostgreSQL: ${databaseErrorMessage(error)}\n`)
   console.error('Check DATABASE_URL in backend/.env. Example:')
   console.error('DATABASE_URL=postgresql://postgres:password@localhost:5432/callwave\n')
-  process.exit(1)
+  if (config.isProduction) {
+    process.exit(1)
+  }
+
+  console.error('Starting the development API without PostgreSQL. Database-backed routes will be unavailable.')
 }
 
 const server = app.listen(config.port, () => {

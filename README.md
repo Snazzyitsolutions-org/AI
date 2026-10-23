@@ -79,6 +79,14 @@ Open **http://localhost:5173**.
 
 > Use `localhost`, not `127.0.0.1`, so the Google OAuth callback and auth cookie share the
 > same host.
+>
+> In development, the API can start without PostgreSQL so Ollama message-writing routes
+> remain available. Database-backed routes will be unavailable and `/api/health` will
+> report the database as unavailable until the database connection is fixed.
+
+If message generation fails, check that `OLLAMA_MODEL` matches a model listed by
+`ollama list`. If Ollama reports that its model runner is missing, restart or reinstall
+Ollama, then retry generation.
 
 ## Environment
 
@@ -96,6 +104,8 @@ Backend settings live in `backend/.env`. A committed template is available at
 | `GOOGLE_CLIENT_ID` | Google OAuth web client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth web client secret |
 | `GOOGLE_REDIRECT_URI` | Must match the URL registered in Google Cloud |
+| `OLLAMA_URL` | Ollama server URL, default `http://localhost:11434` |
+| `OLLAMA_MODEL` | Ollama model used for assistant replies and message drafts, default `llama3.2:3b` |
 
 Generate a JWT secret with:
 
@@ -133,6 +143,9 @@ For deployment, register the production callback URL and update `FRONTEND_URL`,
 | `GET` | `/api/auth/me` | Returns the signed-in user |
 | `GET` | `/api/auth/google/start` | Starts Google OAuth |
 | `GET` | `/api/auth/google/callback` | Google OAuth callback |
+| `POST` | `/api/ai/generate-reply` | Generates a contextual WhatsApp reply for a lead |
+| `POST` | `/api/talk` | Returns an assistant reply using recent conversation history |
+| `POST` | `/api/draft-message` | Generates three message drafts in the selected format, tone, and language |
 
 ## Security notes
 

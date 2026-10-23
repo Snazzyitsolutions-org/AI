@@ -11,6 +11,8 @@ const databaseUrl =
   process.env.DATABASE_URL?.trim() || 'postgresql://postgres@localhost:5432/callwave'
 const databaseSslMode = process.env.DATABASE_SSL?.trim().toLowerCase() || ''
 const databaseUrlHasSslMode = /[?&]sslmode=/i.test(databaseUrl)
+const ollamaUrl = (process.env.OLLAMA_URL?.trim() || 'http://localhost:11434').replace(/\/+$/, '')
+const ollamaModel = process.env.OLLAMA_MODEL?.trim() || 'llama3.2:3b'
 
 function resolveDatabaseSsl() {
   if (databaseSslMode === 'false' || databaseSslMode === 'disable') return false
@@ -47,4 +49,6 @@ export const config = Object.freeze({
   googleEnabled: Boolean(googleClientId && googleClientSecret),
   googleRedirectUri:
     process.env.GOOGLE_REDIRECT_URI?.trim() || `${backendUrl}/api/auth/google/callback`,
+  ollamaUrl,
+  ollamaModel,
 })

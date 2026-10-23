@@ -238,13 +238,6 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
   },
 ]
 
-const QUICK_TEMPLATES = [
-  'Send Pricing Deck & Volume Rates',
-  'Schedule Live WhatsApp Demo 📅',
-  'WhatsApp Broadcast Brochure 📄',
-  'Send WhatsApp Product Catalog 🛍️',
-]
-
 export function InboxPage() {
   usePageTitle('WhatsApp Inbox • CallWave')
 
@@ -712,62 +705,7 @@ export function InboxPage() {
     }
   }
 
-  // Quick Reply 1: Send Pricing Deck & Volume Rates
-  const handleSendPricingDeck = () => {
-    const now = new Date()
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    const docMsg: Message = {
-      id: `m_deck_${Date.now()}`,
-      sender: 'agent',
-      text: `Hi ${activeConversation.name.split(' ')[0]}, here is our latest CallWave Enterprise Pricing Deck and Volume Tier Rates for Q4. Includes Meta WhatsApp Cloud API rates, unlimited agents, and AI auto-pilot.`,
-      time: timeStr,
-      status: 'sent',
-      type: 'document',
-      fileName: 'CallWave_Enterprise_Pricing_2026.pdf',
-      fileSize: '2.4 MB',
-      actionButtons: ['Schedule Pricing Walkthrough', 'Request Custom Volume Quote'],
-    }
-    sendAnyMessage(docMsg, 'pricing deck')
-    notify(`Sent Enterprise Pricing Deck to ${activeConversation.name}`)
-  }
-
-  // Quick Reply 2: Schedule Live WhatsApp Demo 📅
-  const handleSendDemoInvite = () => {
-    const now = new Date()
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    const demoMsg: Message = {
-      id: `m_demo_${Date.now()}`,
-      sender: 'agent',
-      text: `Hi ${activeConversation.name.split(' ')[0]}, I would be happy to host a personalized 15-minute live platform demo of CallWave for ${activeConversation.company}. Which slot works best for your team?`,
-      time: timeStr,
-      status: 'sent',
-      type: 'action',
-      actionButtons: ['Tomorrow 3:00 PM', 'Thursday 11:30 AM', 'Request Custom Time'],
-    }
-    sendAnyMessage(demoMsg, 'schedule demo')
-    notify(`Sent Demo Scheduling invite to ${activeConversation.name}`)
-  }
-
-  // Quick Reply 3: WhatsApp Broadcast Brochure 📄
-  const handleSendBrochure = () => {
-    const now = new Date()
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    const brochureMsg: Message = {
-      id: `m_brochure_${Date.now()}`,
-      sender: 'agent',
-      text: `Here is the official CallWave Broadcast & Campaigns brochure detailing Meta Tier-4 throughput, spintax rotation, and zero-ban compliance guidelines.`,
-      time: timeStr,
-      status: 'sent',
-      type: 'document',
-      fileName: 'CallWave_Broadcast_Brochure.pdf',
-      fileSize: '1.9 MB',
-      actionButtons: ['Explore Meta Cloud API Specs', 'Talk to Enterprise Specialist'],
-    }
-    sendAnyMessage(brochureMsg, 'broadcast brochure')
-    notify(`Sent WhatsApp Broadcast Brochure to ${activeConversation.name}`)
-  }
-
-  // Quick Reply 4: Send WhatsApp Product Catalog 🛍️
+  // Send WhatsApp Product Catalog
   const handleSendCatalog = () => {
     const now = new Date()
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -1843,7 +1781,7 @@ export function InboxPage() {
           {/* =========================================================
                 WHATSAPP CHAT SUITE: 3-ROW DARK MODERN TOOLBAR
                ========================================================= */}
-          <div className="relative z-10 p-3 sm:p-3.5 bg-[#f0f2f5] border-t border-[#e9edef] space-y-2.5 select-none">
+          <div className="relative z-10 px-3 py-3 sm:px-4 bg-transparent border-t border-[#e9edef] space-y-3">
             {/* WhatsApp Emoji Picker Drawer */}
             {emojiPickerOpen && (
               <WhatsAppEmojiPicker
@@ -1916,31 +1854,6 @@ export function InboxPage() {
                   <span>Generate with AI</span>
                 </button>
               </div>
-            </div>
-
-            {/* MIDDLE ROW: Quick Replies (Pricing, Demo, Broadcast, Catalog) in dark style */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 text-xs">
-              <div className="flex items-center gap-1 text-[#54656f] font-extrabold text-[11px] uppercase tracking-wider flex-shrink-0">
-                <span>⚡</span>
-                <span>QUICK REPLY:</span>
-              </div>
-
-              {QUICK_TEMPLATES.map((tmpl, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    if (tmpl.includes('Pricing')) handleSendPricingDeck()
-                    else if (tmpl.includes('Demo')) handleSendDemoInvite()
-                    else if (tmpl.includes('Brochure')) handleSendBrochure()
-                    else if (tmpl.includes('Catalog')) handleSendCatalog()
-                    else handleSendMessage(tmpl)
-                  }}
-                  className="px-3.5 py-1 rounded-full bg-white hover:bg-whatsapp-50 border border-[#d1d7db] hover:border-whatsapp-500/60 text-[#3b4a54] hover:text-whatsapp-800 text-[11.5px] font-medium whitespace-nowrap transition-all shadow-xs cursor-pointer active:scale-95 flex-shrink-0"
-                >
-                  {tmpl}
-                </button>
-              ))}
             </div>
 
             {/* BOTTOM ROW: Combined input bar with icons (+, 📎, 😊, 🎤, ✈️) */}
@@ -2602,9 +2515,6 @@ export function InboxPage() {
         contactName={activeConversation.name}
         companyName={activeConversation.company}
         leadStage={activeConversation.leadStage}
-        lastMessageText={
-          [...activeConversation.messages].reverse().find((m) => m.sender === 'contact')?.text || ''
-        }
         onInsertInChat={(draft) => {
           setInputText(draft)
           setTimeout(() => inputRef.current?.focus(), 50)

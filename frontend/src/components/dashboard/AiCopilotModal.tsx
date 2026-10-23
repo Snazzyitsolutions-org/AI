@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
+import { aiApi } from '../../lib/api'
 
 interface AiCopilotModalProps {
   isOpen: boolean
@@ -6,12 +7,12 @@ interface AiCopilotModalProps {
   contactName: string
   companyName: string
   leadStage: string
-  lastMessageText: string
   onInsertInChat: (text: string) => void
   onSendNow: (text: string) => void
 }
 
 type ToneType = 'closer' | 'professional' | 'friendly' | 'urgent' | 'consultative'
+type LanguageType = 'English' | 'Hindi' | 'Hinglish'
 
 export function AiCopilotModal({
   isOpen,
@@ -19,57 +20,46 @@ export function AiCopilotModal({
   contactName,
   companyName,
   leadStage,
-  lastMessageText,
   onInsertInChat,
   onSendNow,
 }: AiCopilotModalProps) {
-  const firstName = contactName.split(' ')[0] || 'there'
-  const company = companyName || 'your team'
-
   const [selectedTone, setSelectedTone] = useState<ToneType>('closer')
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageType>('English')
   const [customGoal, setCustomGoal] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedDraft, setGeneratedDraft] = useState('')
+  const [generationError, setGenerationError] = useState('')
+  const [modelName, setModelName] = useState('')
 
-  // Generate initial draft when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      generateDraft('closer', '')
-    }
-  }, [isOpen, contactName, lastMessageText])
-
-  if (!isOpen) return null
-
-  const generateDraft = (tone: ToneType, customGoalText: string) => {
+ const generateDraft = useCallback(
+  async (tone: ToneType, language: LanguageType, goal: string) => {
     setIsGenerating(true)
+    setGenerationError('')
     setGeneratedDraft('')
 
-    // Build intelligent context-aware templates
-    let draft = ''
-    if (customGoalText.trim()) {
-      draft = `Hi ${firstName}, regarding ${company}: ${customGoalText.trim()} We can set this up seamlessly with official Meta Cloud API tier-4 integration. Would Tomorrow at 3:00 PM work for a brief 15-minute walkthrough?`
-    } else if (tone === 'closer') {
-      draft = `Hi ${firstName}! Absolutely, I have prepared the tailored enterprise breakdown for ${company}. With CallWave, you get unlimited agents, zero-ban rate spintax pacing, and 99.98% delivery SLA. Can I lock in Tomorrow at 3:00 PM or Thursday 11:30 AM to walk you through your live numbers?`
-    } else if (tone === 'professional') {
-      draft = `Hello ${firstName}, thank you for your query regarding ${company}. We have provisioned the requested specifications and pricing tier details. We ensure complete compliance with Meta Business guidelines and dedicated throughput. Please let us know if you require any additional technical documentation.`
-    } else if (tone === 'friendly') {
-      draft = `Hey ${firstName}! Great connecting with you. We'd love to help ${company} scale WhatsApp broadcasts without any friction! Let me know when you have 10 minutes this week—happy to jump on a quick call and answer any questions.`
-    } else if (tone === 'urgent') {
-      draft = `Hi ${firstName}, quick update for ${company}: our quarterly enterprise volume discount tier expires this Friday! If we confirm your onboarding slot today, we can lock in 25% extra broadcast credits permanently. Let me know if you’d like me to reserve your account.`
-    } else {
-      draft = `Hi ${firstName}, based on your requirements at ${company}, our automated broadcast solution will streamline your agent workflows while keeping costs predictable. What is the current monthly volume you are looking to support?`
-    }
+    try {
+      const result = await aiApi.generateReply({
+        prompt: goal,
+        tone,
+        language,
+        contactName,
+        companyName,
+        leadStage,
+      })
 
-    setTimeout(() => {
-      setGeneratedDraft(draft)
+      setGeneratedDraft(result.reply)
+      setModelName(result.model ?? '')
+    } catch (error) {
+      setGenerationError(
+        error instanceof Error ? error.message : 'Could not generate a reply.',
+      )
+    } finally {
       setIsGenerating(false)
-    }, 450)
-  }
-
-  const handleQuickPrompt = (_promptLabel: string, promptGoal: string) => {
-    setCustomGoal(promptGoal)
-    generateDraft(selectedTone, promptGoal)
-  }
+    }
+  },
+  [contactName, companyName, leadStage],
+)
+  if (!isOpen) return null
 
   return (
     <div
@@ -94,7 +84,7 @@ export function AiCopilotModal({
                   Generate with AI Copilot
                 </h3>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                  GPT-4o / Claude
+                  {modelName ? `Ollama · ${modelName}` : 'Ollama'}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -114,82 +104,65 @@ export function AiCopilotModal({
 
         {/* Content */}
         <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-          {/* Incoming message context */}
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              💬 Inbound Context from {firstName}:
-            </span>
-            <p className="text-slate-800 italic font-medium leading-relaxed">
-              "{lastMessageText || 'No prior message'}"
-            </p>
+          {/* Reply instructions */}
+          <div>
+            <label
+              htmlFor="ai-copilot-goal"
+              className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2"
+            >
+              What should the reply say?
+            </label>
+            <textarea
+              id="ai-copilot-goal"
+              rows={2}
+              maxLength={2000}
+              value={customGoal}
+              onChange={(event) => {
+                setCustomGoal(event.target.value)
+                setGenerationError('')
+              }}
+              placeholder="Describe what you want to send, e.g. I’ll send over the pricing deck and WhatsApp template specs."
+              className="w-full p-3 bg-white border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 outline-none transition-all resize-y leading-relaxed"
+            />
+            <div className="flex justify-end mt-2">
+              <button
+                type="button"
+                disabled={isGenerating || !customGoal.trim()}
+                onClick={() => void generateDraft(selectedTone, selectedLanguage, customGoal.trim())}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Generate reply
+              </button>
+            </div>
           </div>
 
-          {/* Quick Prompts */}
+          {/* Language Selector */}
           <div>
             <span className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2">
-              ⚡ 1-Click Goal Prompts
+              Reply language
             </span>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() =>
-                  handleQuickPrompt(
-                    'Book Demo',
-                    'propose 2 demo slots for a personalized 15-minute walkthrough'
-                  )
-                }
-                className="px-3 py-1.5 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 font-medium transition-all cursor-pointer shadow-2xs active:scale-95"
-              >
-                🎯 Book Live Demo
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  handleQuickPrompt(
-                    'Pricing Quote',
-                    'offer custom volume pricing starting at ₹1,499/mo with zero platform fees'
-                  )
-                }
-                className="px-3 py-1.5 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 font-medium transition-all cursor-pointer shadow-2xs active:scale-95"
-              >
-                💰 Send Custom Pricing
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  handleQuickPrompt(
-                    'Compliance / Zero-Ban',
-                    'assure zero-ban guarantee with official Meta Cloud API and spintax delivery'
-                  )
-                }
-                className="px-3 py-1.5 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 font-medium transition-all cursor-pointer shadow-2xs active:scale-95"
-              >
-                🛡️ Zero-Ban Assurance
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  handleQuickPrompt(
-                    '15% Discount',
-                    'offer an exclusive 15% discount if they confirm a pilot this week'
-                  )
-                }
-                className="px-3 py-1.5 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 font-medium transition-all cursor-pointer shadow-2xs active:scale-95"
-              >
-                🎁 15% VIP Discount
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  handleQuickPrompt(
-                    'Friendly Check-in',
-                    'check in politely and ask if they have any questions on our proposal'
-                  )
-                }
-                className="px-3 py-1.5 rounded-xl text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 font-medium transition-all cursor-pointer shadow-2xs active:scale-95"
-              >
-                🤝 Gentle Check-in
-              </button>
+            <div className="grid grid-cols-3 gap-2">
+              {(['English', 'Hindi', 'Hinglish'] as LanguageType[]).map((language) => (
+                <button
+                  key={language}
+                  type="button"
+                  disabled={isGenerating}
+                  onClick={() => {
+                    setSelectedLanguage(language)
+                    if (customGoal.trim()) {
+                      void generateDraft(selectedTone, language, customGoal.trim())
+                    }
+                  }}
+                  aria-pressed={selectedLanguage === language}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
+                    selectedLanguage === language
+                      ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold shadow-xs ring-1 ring-emerald-500/20'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {language}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -209,11 +182,16 @@ export function AiCopilotModal({
                 <button
                   key={tone.id}
                   type="button"
+                  disabled={isGenerating}
                   onClick={() => {
-                    setSelectedTone(tone.id as ToneType)
-                    generateDraft(tone.id as ToneType, customGoal)
+                    const nextTone = tone.id as ToneType
+                    setSelectedTone(nextTone)
+                    if (customGoal.trim()) {
+                      void generateDraft(nextTone, selectedLanguage, customGoal.trim())
+                    }
                   }}
-                  className={`p-2 rounded-xl text-center font-semibold border transition-all cursor-pointer ${
+                  aria-pressed={selectedTone === tone.id}
+                  className={`p-2 rounded-xl text-center font-semibold border transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
                     selectedTone === tone.id
                       ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold shadow-xs ring-1 ring-emerald-500/20'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 shadow-2xs'
@@ -233,8 +211,9 @@ export function AiCopilotModal({
               </span>
               <button
                 type="button"
-                onClick={() => generateDraft(selectedTone, customGoal)}
-                className="text-[11px] text-slate-500 hover:text-emerald-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                disabled={isGenerating || !customGoal.trim()}
+                onClick={() => void generateDraft(selectedTone, selectedLanguage, customGoal.trim())}
+                className="text-[11px] text-slate-500 hover:text-emerald-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>🔄 Regenerate</span>
               </button>
@@ -245,16 +224,21 @@ export function AiCopilotModal({
                 rows={4}
                 value={generatedDraft}
                 onChange={(e) => setGeneratedDraft(e.target.value)}
-                placeholder={isGenerating ? 'AI is crafting your tailored response…' : ''}
+                placeholder={isGenerating ? 'Ollama is generating your reply…' : ''}
                 className="w-full p-3.5 bg-[#f0fbf5] border border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 outline-none transition-all resize-none leading-relaxed shadow-2xs"
               />
               {isGenerating && (
                 <div className="absolute inset-0 bg-[#f0fbf5]/90 rounded-xl flex items-center justify-center gap-2 text-xs text-emerald-800 font-bold">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                  Generating tailored reply…
+                  Generating with Ollama…
                 </div>
               )}
             </div>
+            {generationError && (
+              <p role="alert" className="mt-2 text-xs font-medium text-rose-700">
+                {generationError}
+              </p>
+            )}
           </div>
 
           {/* Actions */}

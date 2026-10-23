@@ -94,6 +94,22 @@ export const authApi = {
   },
 }
 
+export const aiApi = {
+  generateReply(input: {
+    prompt: string
+    tone: 'closer' | 'professional' | 'friendly' | 'urgent' | 'consultative'
+    language: 'English' | 'Hindi' | 'Hinglish'
+    contactName: string
+    companyName: string
+    leadStage: string
+  }) {
+    return request<{ reply: string; model: string }>('/api/ai/generate-reply', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+  },
+}
+
 export const GOOGLE_START_URL = '/api/auth/google/start'
 
 export const GOOGLE_NOT_CONFIGURED_MESSAGE =
